@@ -2,39 +2,173 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Portafolio de Santiago</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NOCTUA | Beyond Digital</title>
+  <meta name="theme-color" content="#050812">
+  <script>document.documentElement.dataset.theme = localStorage.getItem('noctua-theme-v2') || 'dark';</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <h1>Portafolio de Santiago</h1>
+  <main>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="NOCTUA, inicio">
+        <span class="brand-owl" aria-hidden="true">
+          <img class="brand-logo logo-light" src="logos/logo-dia.jpeg" alt="">
+          <img class="brand-logo logo-dark" src="logos/logo-noche.jpg" alt="">
+        </span>
+        <span class="brand-wordmark"><strong>NOCTUA</strong><small>BEYOND DIGITAL</small></span>
+      </a>
+      <div class="header-actions">
+        <nav class="primary-nav" aria-label="Navegación principal">
+          <a href="#titulo-proyectos">Proyectos</a>
+          <a href="#sobre-noctua">Enfoque</a>
+          <a href="#contacto">Contacto</a>
+        </nav>
+        <span id="estado-sesion" class="session-status" aria-live="polite">Comprobando sesión...</span>
+        <button id="btn-tema" type="button" class="theme-toggle" aria-label="Cambiar a modo noche" aria-pressed="false">☾ <span>Modo noche</span></button>
+      </div>
+    </header>
+    <section class="intro" aria-labelledby="titulo-pagina">
+      <div class="intro-copy">
+        <p class="eyebrow"><span class="status-dot"></span> Diseño digital · Desarrollo web</p>
+        <h1 id="titulo-pagina">Diseño con intención.<br><span>Desarrollo con propósito.</span></h1>
+        <p>Experiencias digitales claras, cuidadas y construidas para resolver necesidades reales.</p>
+        <div class="hero-actions">
+          <a class="button-link" href="#titulo-proyectos">Explorar proyectos <span aria-hidden="true">↘</span></a>
+          <a class="text-link" href="#sobre-noctua">Conocer el enfoque</a>
+        </div>
+      </div>
+      <div class="intro-mark" aria-hidden="true">
+        <img class="hero-logo logo-light" src="logos/logo-dia.jpeg" alt="">
+        <img class="hero-logo logo-dark" src="logos/logo-noche.jpg" alt="">
+      </div>
+    </section>
+    <section class="work-section" aria-labelledby="titulo-proyectos">
+      <div class="section-heading">
+        <div><p class="eyebrow">Selección de trabajo</p><h2 id="titulo-proyectos">Proyectos destacados</h2></div>
+        <p id="alcance-proyectos"></p>
+      </div>
+      <div id="lista-proyectos" class="projects-grid" aria-live="polite"></div>
+    </section>
 
-  <table border="1">
-    <thead>
-      <tr>
-        <th>Nombre del Proyecto</th>
-        <th>Descripción</th>
-        <th>Estado</th>
-      </tr>
-    </thead>
-    <tbody id="cuerpo-proyectos"></tbody>
-  </table>
+    <section id="sobre-noctua" class="approach-section" aria-labelledby="titulo-enfoque">
+      <div class="approach-heading"><p class="eyebrow">El enfoque</p><h2 id="titulo-enfoque">Ideas bien pensadas.<br><span>Experiencias bien hechas.</span></h2></div>
+      <div class="approach-copy"><p>NOCTUA une diseño y desarrollo para llevar cada proyecto de una idea inicial a una experiencia digital funcional.</p><div class="principles-grid"><article><span>01</span><h3>Claridad</h3><p>Interfaces directas, contenido fácil de entender y decisiones visuales con sentido.</p></article><article><span>02</span><h3>Intención</h3><p>Cada elemento cumple un propósito y acompaña los objetivos del proyecto.</p></article><article><span>03</span><h3>Detalle</h3><p>Una ejecución cuidada en la estructura, la interacción y la presentación.</p></article></div></div>
+    </section>
 
-  <hr>
-  <h2>Registrar Nuevo Proyecto</h2>
-  <form id="form-proyecto">
-    <label>Cliente:
-      <select id="campo-cliente"></select>
-    </label>
-    <label>Nombre del Proyecto:
-      <input type="text" id="campo-nombre" required>
-    </label>
-    <label>Descripción:
-      <input type="text" id="campo-descripcion">
-    </label>
-    <button type="submit">Registrar Proyecto</button>
-  </form>
-  <p id="mensaje-proyecto"></p>
+    <section id="contacto" class="contact-section" aria-labelledby="titulo-contacto">
+      <div><p class="eyebrow">Siguiente paso</p><h2 id="titulo-contacto">Hagamos algo que valga la pena.</h2><p>Accede a tu espacio para conversar sobre un proyecto o consultar su avance.</p></div>
+      <a class="button-link" href="#acceso">Entrar o crear cuenta <span aria-hidden="true">↗</span></a>
+    </section>
 
-  <!-- scripts cargados en el orden correcto -->
+    <section id="acceso" hidden aria-labelledby="titulo-acceso">
+      <div class="access-intro">
+        <p class="eyebrow">Tu espacio en NOCTUA</p>
+        <h2 id="titulo-acceso">Tu espacio de proyectos</h2>
+        <p>Entra con tu correo o crea una cuenta para seguir tus proyectos y comunicarte con nosotros.</p>
+      </div>
+      <form id="form-iniciar-sesion" class="email-login">
+        <h3>Iniciar sesión</h3>
+        <label>Correo <input type="email" id="correo" autocomplete="email" required></label>
+        <label>Contraseña <input type="password" id="contrasena" autocomplete="current-password" required></label>
+        <button type="submit">Entrar</button>
+      </form>
+      <form id="form-registrarse" class="signup-form">
+        <h3>Crear cuenta</h3>
+        <label>Nombre <input type="text" id="registro-nombre" autocomplete="name" maxlength="120" required></label>
+        <label>Correo <input type="email" id="registro-correo" autocomplete="email" required></label>
+        <label>Teléfono <input type="tel" id="registro-telefono" autocomplete="tel" maxlength="20" required></label>
+        <label>Contraseña <input type="password" id="registro-contrasena" autocomplete="new-password" minlength="8" required></label>
+        <button type="submit">Crear mi cuenta</button>
+      </form>
+      <p id="mensaje-sesion" aria-live="polite"></p>
+    </section>
+
+    <section id="area-cuenta" hidden aria-labelledby="titulo-cuenta">
+      <h2 id="titulo-cuenta">Mi cuenta</h2>
+      <button type="button" id="btn-cerrar-sesion">Cerrar sesión</button>
+      <form id="form-cambiar-contrasena">
+        <label>Nueva contraseña <input type="password" id="nueva-contrasena" autocomplete="new-password" minlength="8" required></label>
+        <button type="submit">Cambiar contraseña</button>
+      </form>
+      <p id="mensaje-contrasena" aria-live="polite"></p>
+    </section>
+
+    <section id="area-usuario" hidden aria-labelledby="titulo-mensaje">
+      <h2 id="titulo-mensaje">Mensaje al administrador</h2>
+      <form id="form-mensaje">
+        <label>Tu mensaje <textarea id="campo-mensaje" maxlength="2000" required></textarea></label>
+        <button type="submit">Enviar mensaje</button>
+      </form>
+      <p id="mensaje-envio" aria-live="polite"></p>
+    </section>
+
+    <section id="area-admin" hidden aria-labelledby="titulo-admin">
+      <div class="admin-heading"><div><p class="eyebrow">NOCTUA · Gestión</p><h2 id="titulo-admin">Panel de administración</h2><p>Proyectos, clientes y mensajes en un solo lugar.</p></div></div>
+      <div class="report-panel" aria-labelledby="titulo-resumen-proyectos">
+        <div class="section-heading">
+          <div>
+            <h3 id="titulo-resumen-proyectos">Indicadores de proyectos</h3>
+            <p>Revisa la actividad del portafolio por periodo, el avance de cada proyecto y las publicaciones activas.</p>
+          </div>
+        </div>
+        <form id="form-resumen-proyectos" class="report-form">
+          <label>Proyectos creados desde <input type="date" id="resumen-desde" required></label>
+          <label>Hasta <input type="date" id="resumen-hasta" required></label>
+          <button type="submit">Actualizar indicadores</button>
+        </form>
+        <p id="mensaje-resumen" aria-live="polite"></p>
+        <div id="resultado-resumen" hidden>
+          <div class="metric-grid" aria-label="Métricas del periodo">
+            <article><span>Total creados</span><strong id="total-proyectos-periodo">0</strong></article>
+            <article><span>En progreso</span><strong id="total-en-progreso">0</strong></article>
+            <article><span>Completados</span><strong id="total-completados">0</strong></article>
+            <article><span>Publicados</span><strong id="total-publicados">0</strong></article>
+          </div>
+          <div class="report-columns">
+            <div>
+              <h4>Actividad del periodo</h4>
+              <div id="lista-resumen-proyectos"></div>
+            </div>
+            <div>
+              <h4>Por estado</h4>
+              <ul id="resumen-por-estado" class="summary-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <form id="form-proyecto" class="admin-card">
+        <h3>Registrar proyecto</h3>
+        <label>Cliente <select id="campo-cliente" required></select></label>
+        <label>Nombre <input type="text" id="campo-nombre" required></label>
+        <label>Descripción <textarea id="campo-descripcion"></textarea></label>
+        <label>Estado <select id="campo-estado"><option value="en_progreso">En progreso</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select></label>
+        <label class="checkbox-label"><input type="checkbox" id="campo-visible"> Publicar en portafolio</label>
+        <p class="field-help">Solo los proyectos completados y publicados aparecen a los visitantes.</p>
+        <button type="submit">Registrar proyecto</button>
+      </form>
+      <div id="panel-edicion" hidden>
+        <form id="form-editar-proyecto">
+          <h3>Editar proyecto</h3>
+          <input type="hidden" id="editar-id">
+          <label>Nombre <input type="text" id="editar-nombre" required></label>
+          <label>Descripción <textarea id="editar-descripcion"></textarea></label>
+          <label>Estado <select id="editar-estado"><option value="en_progreso">En progreso</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select></label>
+          <label class="checkbox-label"><input type="checkbox" id="editar-visible"> Publicar en portafolio</label>
+          <button type="submit">Guardar cambios</button>
+          <button type="button" id="btn-cancelar-edicion">Cancelar</button>
+        </form>
+      </div>
+      <p id="mensaje-proyecto" aria-live="polite"></p>
+      <div class="admin-columns">
+        <div class="admin-card"><h3>Clientes y permisos</h3><div id="lista-usuarios"></div><p id="mensaje-roles" aria-live="polite"></p></div>
+        <div class="admin-card"><h3>Mensajes recibidos</h3><div id="lista-mensajes"></div></div>
+      </div>
+    </section>
+  </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/app.js"></script>

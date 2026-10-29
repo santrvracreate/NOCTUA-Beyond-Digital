@@ -32,11 +32,11 @@
 
 //------------------------------------------------------------------------
 
-const productos = [
-  { nombre: "Martillo", precio: 45, existencia: 12 },
-  { nombre: "Taladro", precio: 350, existencia: 5 },
-  { nombre: "Clavos", precio: 15, existencia: 40 },
-];
+// const productos = [
+//   { nombre: "Martillo", precio: 45, existencia: 12 },
+//   { nombre: "Taladro", precio: 350, existencia: 5 },
+//   { nombre: "Clavos", precio: 15, existencia: 40 },
+// ];
 
 // const nombres = productos.map((p) => p.nombre);
 

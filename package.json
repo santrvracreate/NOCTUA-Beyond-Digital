@@ -1,0 +1,20 @@
+{
+  "name": "noctua-portafolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "lint": "eslint js scripts tests",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": { "@supabase/supabase-js": "2.118.0" },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "supabase": "2.122.0"
+  }
+}

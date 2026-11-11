@@ -52,11 +52,11 @@ Las políticas RLS permisivas se combinan mediante OR. La auditoría confirmó q
 - `proyectos_elimina_solo_admin` ya está activa, está dirigida al rol `authenticated` y llama a `private.es_admin()`.
 - La función privada consulta `public.perfiles` con `id = auth.uid()` y `rol = 'admin'`; por tanto, cumple la restricción solicitada sin duplicar la lógica en cada tabla.
 
-## Pruebas con dos cuentas pendientes
+## Pruebas con dos cuentas temporales
 
 | Cuenta | Acción | Resultado esperado |
 | --- | --- | --- |
 | Cliente (`usuario`) | Intentar eliminar un proyecto de prueba | No se elimina ninguna fila; la interfaz muestra que no se pudo eliminar. |
 | Administrador (`admin`) | Eliminar el mismo proyecto de prueba | La fila se elimina y deja de aparecer tras recargar el listado. |
 
-La auditoría de configuración ya confirmó la política. Falta completar estas dos pruebas de interfaz con credenciales reales y añadir las capturas. La protección principal es la política RLS; ocultar botones en la interfaz solo mejora la experiencia y no reemplaza la seguridad de la base de datos.
+El 3 de noviembre de 2026 se iniciaron sesiones reales con cuentas temporales de cliente y administrador. El cliente no pudo borrar el proyecto; el administrador lo editó y eliminó desde la interfaz. También se verificó que el cliente no puede asociar una solicitud a un proyecto ajeno y que un administrador no puede cambiar su propio rol. Se eliminaron las cuentas y registros temporales al terminar. La protección principal es RLS; ocultar botones en la interfaz solo mejora la experiencia y no reemplaza la seguridad de la base de datos.

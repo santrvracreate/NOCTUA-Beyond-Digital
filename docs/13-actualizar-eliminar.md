@@ -6,13 +6,13 @@
 
 Al hacer clic en el botón "Editar" de un proyecto, se abre el formulario con los datos precargados. Tras modificar algún dato y hacer clic en "Guardar cambios", el proyecto se actualiza en la base de datos de Supabase y la tabla se recarga automáticamente.
 
-_[Inserta aquí una captura de pantalla del formulario de edición abierto y otra del resultado tras guardar]_
+La interfaz se probó con una cuenta administradora temporal real: el cambio se guardó en Supabase y apareció en la tabla tras filtrar por el nuevo nombre.
 
 ### 2. Eliminar un proyecto
 
 Al hacer clic en el botón "Eliminar", aparece un cuadro de diálogo (`window.confirm()`) preguntando si estamos seguros de eliminar. Al aceptar, se borra el proyecto en Supabase y desaparece de la pantalla.
 
-_[Inserta aquí una captura de pantalla del mensaje de confirmación y otra de la tabla sin el producto]_
+La operación exige confirmación y comprueba que Supabase haya devuelto una fila eliminada. Se verificó el borrado desde la interfaz con una cuenta administradora temporal y se confirmó que la fila dejó de existir en la base.
 
 ## Reflexión Breve
 

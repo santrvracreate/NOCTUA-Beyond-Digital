@@ -1,0 +1,1 @@
+export default [{ignores:['dist/**','node_modules/**']},{files:['js/**/*.js','scripts/**/*.mjs','tests/**/*.js'],languageOptions:{ecmaVersion:'latest',sourceType:'module'},rules:{'no-duplicate-imports':'error','no-unreachable':'error','no-constant-condition':'error','valid-typeof':'error'}}];

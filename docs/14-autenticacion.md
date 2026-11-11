@@ -29,7 +29,7 @@ El 14 de octubre de 2026 se consultó la API REST con la clave pública y sin se
 
 En este portafolio, el resultado anónimo de `proyectos` no debe ser un error: su política RLS permite el portafolio público. La consulta equivalente con sesión administrativa y la prueba real de cambio de contraseña requieren iniciar sesión manualmente con la contraseña del administrador; no se realizó esa prueba desde esta revisión.
 
-Actualmente no hay proyectos completados y publicados en la base de datos. Por eso la portada muestra un estado vacío honesto, sin convertir proyectos privados o cancelados en ejemplos públicos.
+La portada muestra los proyectos completados y publicados que devuelve la base de datos. Si no hay coincidencias, muestra un estado vacío; no convierte proyectos privados o cancelados en ejemplos públicos.
 
 ## Reflexión
 

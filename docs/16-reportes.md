@@ -14,19 +14,20 @@ El panel vive dentro del área administrativa. No se muestra a visitantes ni a c
 
 ## Consulta segura en la aplicación
 
-La función `loadProjectSummary()` de `js/app.js` consulta proyectos y su cliente en una sola solicitud:
+La función `dashboard()` de `js/admin.js` consulta proyectos y su cliente en una sola solicitud para el detalle del periodo:
 
 ```javascript
-supabaseClient.from('proyectos')
+db.from('proyectos')
   .select('id,nombre,estado,visible_clientes,created_at,clientes(nombre)')
-  .gte('created_at', localDayStartAsIso(desde))
-  .lt('created_at', localDayStartAsIso(hasta, 1))
-  .order('created_at', { ascending: false });
+  .gte('created_at', range[0])
+  .lt('created_at', range[1])
+  .order('created_at', { ascending: false })
+  .limit(50);
 ```
 
 El select anidado `clientes(nombre)` trae el nombre de la persona asociada por `proyectos.id_cliente`, además de los datos del proyecto. Un `select()` simple no contendría esa relación, de modo que la interfaz no podría presentar el proyecto junto a su cliente sin hacer otra consulta.
 
-El total se calcula en JavaScript con `data.length`; el desglose por estado usa `reduce()` con un objeto acumulador. La métrica de publicaciones exige a la vez `visible_clientes = true` y estado `completado`, que es la regla real del portafolio. El SQL equivalente está en `docs/sql/16-reportes.sql` y utiliza `COUNT()` y `GROUP BY`.
+Los totales se consultan con `COUNT` exacto en el servidor para que no dependan del límite de 50 detalles. Se muestran total, en progreso, completados, cancelados y publicados. La métrica de publicaciones exige a la vez `visible_clientes = true` y estado `completado`, que es la regla real del portafolio. El SQL equivalente está en `docs/sql/16-reportes.sql` y utiliza `COUNT()` y `GROUP BY`.
 
 ## Comparación y verificación
 
@@ -36,10 +37,10 @@ Para verificar el reporte, se debe consultar el mismo rango de fechas en la pant
 | --- | --- |
 | Interfaz con filtro y total | Implementada localmente. |
 | SQL de total, detalle y agrupación | Preparado en `docs/sql/16-reportes.sql`. |
-| Consulta SQL de prueba | La base actual no contiene proyectos; las consultas devuelven `0` filas sin error. |
-| Agrupación SQL de prueba | Sin proyectos en el periodo, el agrupamiento no devuelve filas. |
+| Consulta SQL de prueba | Preparada para comparar contra los datos actuales de la base. |
+| Agrupación SQL de prueba | Preparada para comparar los totales por estado. |
 
-La prueba SQL confirma que las consultas funcionan también con una base vacía. Al registrar proyectos reales, abre la aplicación con la sesión administradora, consulta el mismo rango y verifica que los indicadores coincidan con el SQL.
+La comparación de los totales de pantalla y SQL requiere una sesión administradora. La fecha inicial del formulario usa el día local de Bolivia.
 
 ## Buenas prácticas aplicadas
 

@@ -1,0 +1,10 @@
+import { build } from "esbuild";
+import { mkdir, cp, readFile, writeFile } from "node:fs/promises";
+await mkdir("dist", { recursive: true });
+await build({ entryPoints: ["./js/app.js"], absWorkingDir: process.cwd(), bundle: true, splitting: true, format: "esm", outdir: "dist/js", minify: true, target: ["es2022"], metafile: true }).then(async (r) => writeFile("dist/build-meta.json", JSON.stringify(r.metafile)));
+for (const dir of ["css", "logos", "pages"]) await cp(dir, "dist/" + dir, { recursive: true });
+for (const file of ["index.html", "favicon.ico"]) await cp(file, "dist/" + file);
+const css = await readFile("css/styles.css", "utf8");
+const { transform } = await import("esbuild");
+await writeFile("dist/css/styles.css", (await transform(css, { loader: "css", minify: true })).code);
+console.log("Producci\xF3n lista en dist/");

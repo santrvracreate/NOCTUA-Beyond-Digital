@@ -2,7 +2,11 @@
 
 ## Identidad visual
 
-El sitio abre en modo oscuro: fondo negro, superficies oscuras y detalles azul marino. El botón de tema permite cambiar al modo claro. El búho de los archivos `logos/logo-dia.jpeg` y `logos/logo-noche.jpg` se muestra completo, sin cortar las alas, y destaca en la portada.
+El diseño oficial es claro permanente: blanco, negro y escala de grises. Se eliminó el selector de temas y su lógica JavaScript. Los componentes comparten variables de color en `css/styles.css`.
+
+El búho original de `logos/logo-dia.jpeg` se encuadra mediante CSS, sin deformarlo ni cortar sus alas. En el encabezado acompaña al nombre NOCTUA; en la portada ocupa un espacio propio con líneas orbitales. Un filtro de escala de grises conserva la identidad monocromática. Los archivos originales del logo se conservan.
+
+La composición usa Space Grotesk para títulos y Manrope para lectura, con tipografías de sistema como respaldo. Tarjetas, formularios, indicadores y paneles comparten espaciados, bordes y estados de foco. Incluye adaptación a móvil, enlace para saltar al contenido, controles de al menos 44 px y respeto por la preferencia de movimiento reducido. El ajuste del encabezado conserva el símbolo también a 320 px.
 
 ## Acceso de clientes
 

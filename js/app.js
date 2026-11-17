@@ -87,8 +87,6 @@ async function refresh(next) {
     }
     if (ticket !== generation) return;
     render();
-    await projects();
-    if (ticket !== generation) return;
     if (role === "admin") {
       const m = await import("./admin.js");
       if (ticket === generation) admin = m.mountAdmin(projects);
@@ -97,7 +95,11 @@ async function refresh(next) {
       const m = await import("./client.js");
       if (ticket === generation) await m.mountClient(session.user.id);
     }
+    if (ticket !== generation) return;
+    await projects();
   } catch (e) {
+    if (ticket !== generation) return;
+    render();
     notice("#app-notice", errorText(e), "error");
   }
 }

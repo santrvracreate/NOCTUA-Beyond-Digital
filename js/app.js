@@ -2,6 +2,25 @@ import { db, result, list, PAGE_SIZE, save } from "./data.js";
 import { $, el, notice, show, button, bindForm, empty, errorText } from "./ui.js";
 import { requiredText, safeUrl, statuses } from "./validation.js";
 let session = null, role = null, page = 0, generation = 0, projectRequest = 0, admin = null, lastIdentity;
+let categories = new Map();
+async function loadCategories() {
+  const { data } = await result(db.from("categorias").select("id,nombre").order("nombre"));
+  categories = new Map(data.map((category) => [String(category.id), category.nombre]));
+  const select = $("#filtro-categoria");
+  const selected = select.value;
+  select.replaceChildren(el("option", "Todas las categorías"));
+  select.firstChild.value = "all";
+  for (const [id, name] of categories) {
+    const option = el("option", name);
+    option.value = id;
+    select.append(option);
+  }
+  select.value = categories.has(selected) ? selected : "all";
+}
+async function refreshProjects() {
+  await loadCategories();
+  await projects();
+}
 async function projects() {
   const ticket = ++projectRequest;
   const currentRole = role;
@@ -9,11 +28,13 @@ async function projects() {
   try {
     const filters = {};
     if (currentRole && $("#filtro-estado").value !== "all") filters.estado = $("#filtro-estado").value;
-    const columns = currentRole ? "id,nombre,descripcion,estado,url_demo,url_produccion,visible_clientes" : "id,nombre";
+    if ($("#filtro-categoria").value !== "all") filters.id_categoria = Number($("#filtro-categoria").value);
+    const columns = currentRole ? "id,nombre,descripcion,estado,id_categoria,url_demo,url_produccion,visible_clientes" : "id,nombre,id_categoria,url_produccion";
     const r = await list("proyectos", columns, { page, search: $("#buscar-proyectos").value, sort: $("#orden-proyectos").value === "name" ? "nombre" : "id", ascending: $("#orden-proyectos").value === "name", filters });
     if (ticket !== projectRequest) return;
     $("#lista-proyectos").replaceChildren(...r.data.map((p) => {
       const c = el("article", null, "project-card");
+      if (p.id_categoria && categories.has(String(p.id_categoria))) c.append(el("span", categories.get(String(p.id_categoria)), "project-category"));
       c.append(el("h3", p.nombre));
       c.append(el("p", currentRole ? p.descripcion || "Sin descripci\xF3n registrada." : "Inicia sesi\xF3n para consultar los detalles."));
       if (currentRole) {
@@ -26,6 +47,13 @@ async function projects() {
           c.append(a);
         }
       }
+      if (!currentRole && safeUrl(p.url_produccion)) {
+        const link = el("a", "Abrir página web ↗");
+        link.href = safeUrl(p.url_produccion);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        c.append(link);
+      }
       return c;
     }));
     if (!r.data.length) empty($("#lista-proyectos"), "No hay proyectos disponibles con estos filtros.");
@@ -36,11 +64,30 @@ async function projects() {
     if (ticket === projectRequest) empty($("#lista-proyectos"), errorText(e));
   }
 }
+async function loadClientMessages() {
+  if (role !== "usuario" || !session) return;
+  const userId = session.user.id;
+  const root = $("#mensajes-cliente");
+  empty(root, "Cargando mensajes…");
+  try {
+    const { data } = await result(db.from("mensajes").select("id,contenido,remitente,created_at").eq("id_usuario", userId).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50));
+    if (role !== "usuario" || session?.user?.id !== userId) return;
+    root.replaceChildren();
+    for (const message of data.reverse()) {
+      const item = el("article", null, `message-bubble ${message.remitente === "admin" ? "message-admin" : "message-client"}`);
+      item.append(el("span", message.remitente === "admin" ? "NOCTUA" : "Tú", "message-sender"), el("p", message.contenido), el("time", new Date(message.created_at).toLocaleString("es-BO", { timeZone: "America/La_Paz", dateStyle: "medium", timeStyle: "short" })));
+      root.append(item);
+    }
+    if (!data.length) empty(root, "Aún no hay mensajes. Envíanos el primero.");
+  } catch (error) {
+    if (role === "usuario" && session?.user?.id === userId) empty(root, errorText(error));
+  }
+}
 function render() {
   const isAdmin = role === "admin";
   document.body.classList.toggle("admin-mode", isAdmin);
   show("#acceso", !session);
-  show("#area-cuenta", !!session);
+  show("#area-cuenta", !!session && !isAdmin);
   show("#area-usuario", role === "usuario");
   show("#area-admin", role === "admin");
   show("#filtro-estado-label", !!role);
@@ -65,6 +112,7 @@ async function refresh(next) {
   admin = null;
   $("#admin-content").replaceChildren();
   $("#client-content").replaceChildren();
+  $("#mensajes-cliente").replaceChildren();
   $("#record-dialog").close();
   page = 0;
   render();
@@ -89,14 +137,15 @@ async function refresh(next) {
     render();
     if (role === "admin") {
       const m = await import("./admin.js");
-      if (ticket === generation) admin = m.mountAdmin(projects);
+      if (ticket === generation) admin = m.mountAdmin(refreshProjects);
     }
     if (role === "usuario") {
       const m = await import("./client.js");
       if (ticket === generation) await m.mountClient(session.user.id);
+      if (ticket === generation) await loadClientMessages();
     }
     if (ticket !== generation) return;
-    await projects();
+    await refreshProjects();
   } catch (e) {
     if (ticket !== generation) return;
     render();
@@ -135,10 +184,12 @@ bindForm("#form-cambiar-contrasena", "#mensaje-contrasena", async (f) => {
 });
 bindForm("#form-mensaje", "#mensaje-envio", async (f) => {
   if (role !== "usuario") return;
-  await result(db.from("mensajes").insert({ id_usuario: session.user.id, contenido: requiredText($("#campo-mensaje").value, 2e3) }));
+  await result(db.from("mensajes").insert({ id_usuario: session.user.id, contenido: requiredText($("#campo-mensaje").value, 2e3), remitente: "cliente" }));
   f.reset();
   notice("#mensaje-envio", "Mensaje enviado.");
+  await loadClientMessages();
 });
+$("#actualizar-mensajes").addEventListener("click", loadClientMessages);
 async function signOut() {
   try {
     await result(db.auth.signOut());

@@ -23,6 +23,7 @@ const createdUsers = [];
 const createdProjects = [];
 const createdMessages = [];
 const createdRequests = [];
+const createdCategories = [];
 const suffix = randomBytes(8).toString("hex");
 
 function checked(response, label) {
@@ -41,10 +42,20 @@ async function makeAccount(kind) {
   return { id: user.id, client, email, password };
 }
 
-async function verifyBrowser(admin, customer) {
+async function verifyBrowser(admin, customer, category) {
   const browser = await chromium.launch({ channel: "chrome", headless: true });
   const errors = [];
   try {
+    const visitorPage = await browser.newPage();
+    visitorPage.on("pageerror", (error) => errors.push(error.message));
+    await visitorPage.goto(process.env.NOCTUA_BASE_URL);
+    await visitorPage.locator("#filtro-categoria").selectOption(String(category.id));
+    await visitorPage.locator("#form-filtros-proyectos button").click();
+    await expect(visitorPage.locator("#lista-proyectos")).toContainText(`Verificación editada ${suffix}`);
+    await expect(visitorPage.locator(".project-card").filter({ hasText: `Verificación editada ${suffix}` }).locator(".project-category")).toHaveText(category.nombre);
+    await expect(visitorPage.locator(".project-card").filter({ hasText: `Verificación editada ${suffix}` }).getByRole("link", { name: "Abrir página web" })).toHaveAttribute("href", "https://example.com/");
+    await visitorPage.close();
+
     const customerPage = await browser.newPage();
     customerPage.on("pageerror", (error) => errors.push(error.message));
     await customerPage.goto(process.env.NOCTUA_BASE_URL);
@@ -54,6 +65,10 @@ async function verifyBrowser(admin, customer) {
     await expect(customerPage.locator("#area-usuario")).toBeVisible({ timeout: 15000 });
     await expect(customerPage.locator("#client-content")).toContainText("Mis solicitudes");
     await expect(customerPage.locator("#lista-proyectos")).toContainText(`Verificación editada ${suffix}`);
+    await expect(customerPage.locator("#mensajes-cliente")).toContainText(`Mensaje temporal ${suffix}`);
+    await customerPage.locator("#campo-mensaje").fill(`Mensaje desde la página ${suffix}`);
+    await customerPage.locator("#form-mensaje button").click();
+    await expect(customerPage.locator("#mensajes-cliente")).toContainText(`Mensaje desde la página ${suffix}`);
 
     const page = await browser.newPage();
     page.on("pageerror", (error) => errors.push(error.message));
@@ -62,6 +77,19 @@ async function verifyBrowser(admin, customer) {
     await page.locator("#contrasena").fill(admin.password);
     await page.locator("#form-iniciar-sesion button").click();
     await expect(page.locator("#area-admin")).toBeVisible({ timeout: 15000 });
+    await page.locator("#admin-nav [data-panel=categorias]").click();
+    await page.locator("#admin-content tbody tr").filter({ hasText: category.nombre }).getByRole("button", { name: "Eliminar" }).click();
+    await expect(page.locator("#app-notice")).toContainText("Esta categoría tiene proyectos");
+    await page.locator("#admin-nav [data-panel=mensajes]").click();
+    await page.locator("#admin-content select[name=cliente]").selectOption(customer.id);
+    await expect(page.locator("#admin-content .message-list")).toContainText(`Mensaje temporal ${suffix}`);
+    await expect(page.locator("#admin-content .message-list")).toContainText(`Mensaje desde la página ${suffix}`);
+    await page.locator("#admin-content .message-compose textarea").fill(`Respuesta temporal ${suffix}`);
+    await page.getByRole("button", { name: "Enviar respuesta" }).click();
+    await expect(page.locator("#admin-content .message-list")).toContainText(`Respuesta temporal ${suffix}`);
+    await customerPage.locator("#actualizar-mensajes").click();
+    await expect(customerPage.locator("#mensajes-cliente")).toContainText(`Respuesta temporal ${suffix}`);
+    await page.locator("#admin-nav [data-panel=dashboard]").click();
     await page.getByRole("button", { name: "Consultar periodo" }).click();
     await expect(page.locator("#admin-content")).toContainText(`Verificación editada ${suffix}`);
     await page.locator("#admin-nav [data-panel=proyectos]").click();
@@ -71,6 +99,7 @@ async function verifyBrowser(admin, customer) {
     const row = page.locator("#admin-content tbody tr").filter({ hasText: `Verificación editada ${suffix}` });
     await expect(row).toHaveCount(1);
     await row.getByRole("button", { name: "Editar" }).click();
+    await expect(page.locator("#record-dialog select[name=id_categoria]")).toContainText(category.nombre);
     await page.locator("#record-dialog input[name=nombre]").fill(`Verificación UI ${suffix}`);
     await page.locator("#record-dialog button[type=submit]").click();
     await expect(page.locator("#record-dialog")).toBeHidden();
@@ -95,7 +124,9 @@ try {
   assert.equal(adminRole.rol, "admin");
   assert.equal(customerRole.rol, "usuario");
 
-  const project = checked(await admin.client.from("proyectos").insert({ id_cliente: customer.id, nombre: `Verificación ${suffix}`, descripcion: "Proyecto temporal de prueba", estado: "en_progreso", visible_clientes: false }).select("id").single(), "crear proyecto");
+  const category = checked(await admin.client.from("categorias").insert({ nombre: `Categoría temporal ${suffix}` }).select("id,nombre").single(), "crear categoría");
+  createdCategories.push(category.id);
+  const project = checked(await admin.client.from("proyectos").insert({ id_cliente: customer.id, id_categoria: category.id, nombre: `Verificación ${suffix}`, descripcion: "Proyecto temporal de prueba", url_produccion: "https://example.com/", estado: "en_progreso", visible_clientes: false }).select("id").single(), "crear proyecto");
   createdProjects.push(project.id);
   assert.equal(checked(await customer.client.from("proyectos").select("id").eq("id", project.id), "ver proyecto propio").length, 1);
   assert.equal(checked(await anon.from("proyectos").select("id").eq("id", project.id), "ver proyecto público").length, 0);
@@ -107,6 +138,8 @@ try {
   const message = checked(await customer.client.from("mensajes").insert({ id_usuario: customer.id, contenido: `Mensaje temporal ${suffix}` }).select("id").single(), "enviar mensaje");
   createdMessages.push(message.id);
   assert.equal(checked(await admin.client.from("mensajes").select("id").eq("id", message.id), "leer mensaje admin").length, 1);
+  const forgedMessage = await customer.client.from("mensajes").insert({ id_usuario: customer.id, contenido: "Falso mensaje administrativo", remitente: "admin" }).select("id");
+  assert.ok(forgedMessage.error || !forgedMessage.data?.length, "Un cliente pudo hacerse pasar por el administrador.");
 
   const otherProject = checked(await admin.client.from("proyectos").insert({ id_cliente: admin.id, nombre: `Proyecto ajeno ${suffix}`, estado: "en_progreso", visible_clientes: false }).select("id").single(), "crear proyecto ajeno");
   createdProjects.push(otherProject.id);
@@ -119,7 +152,8 @@ try {
   assert.ok(ownRoleChange.error || !ownRoleChange.data?.length, "Un administrador pudo cambiar su propio rol.");
 
   if (process.env.NOCTUA_BASE_URL) {
-    await verifyBrowser(admin, customer);
+    checked(await admin.client.from("proyectos").update({ estado: "completado", visible_clientes: true }).eq("id", project.id).select("id"), "publicar proyecto temporal");
+    await verifyBrowser(admin, customer, category);
     assert.equal(checked(await service.from("proyectos").select("id").eq("id", project.id), "verificar borrado en interfaz").length, 0);
   } else {
     assert.equal(checked(await admin.client.from("proyectos").delete().eq("id", project.id).select("id"), "eliminar proyecto admin").length, 1);
@@ -129,6 +163,7 @@ try {
   for (const id of createdRequests) checked(await service.from("solicitudes").delete().eq("id", id), "limpiar solicitud");
   for (const id of createdMessages) checked(await service.from("mensajes").delete().eq("id", id), "limpiar mensaje");
   for (const id of createdProjects) checked(await service.from("proyectos").delete().eq("id", id), "limpiar proyecto");
+  for (const id of createdCategories) checked(await service.from("categorias").delete().eq("id", id), "limpiar categoría");
   for (const id of createdUsers.reverse()) checked(await service.auth.admin.deleteUser(id), "limpiar cuenta");
   for (const id of createdProjects) assert.equal(checked(await service.from("proyectos").select("id").eq("id", id), "verificar limpieza de proyectos").length, 0);
   for (const id of createdUsers) {

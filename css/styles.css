@@ -106,6 +106,7 @@ button[aria-busy="true"] { cursor: wait; }
 .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .project-card, .catalog-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; min-height: 220px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); transition: border-color 180ms ease, background-color 180ms ease; }
 .project-card:hover, .catalog-card:hover { border-color: #a3a3a3; background: var(--surface-soft); }
+.project-category { display: inline-flex; width: fit-content; margin-bottom: 16px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-soft); color: var(--muted); font-size: .66rem; font-weight: 700; letter-spacing: .03em; }
 .project-card h3, .catalog-card h3 { font-size: clamp(1.3rem, 2.1vw, 1.8rem); overflow-wrap: anywhere; }
 .project-card p, .catalog-card p { margin-top: 14px; color: var(--muted); font-size: .84rem; line-height: 1.8; }
 .project-status, .badge { display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid var(--line); border-radius: 40px; background: var(--surface-alt); color: var(--ink); font-size: .7rem; font-weight: 600; line-height: 1.5; }
@@ -171,6 +172,16 @@ legend { padding-inline: 6px; font-size: .85rem; font-weight: 600; }
 .panel-card, .admin-card, .report-panel { min-width: 0; padding: clamp(20px, 2.5vw, 32px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 #form-mensaje { max-width: 680px; }
 #client-content { margin-top: 36px; display: grid; gap: 24px; }
+.conversation-heading { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 16px; margin-block: 28px 14px; }
+.conversation-heading label { min-width: min(100%, 320px); }
+.conversation-heading h3 { margin: 0; }
+.message-list { display: flex; flex-direction: column; gap: 14px; max-height: 560px; min-height: 120px; overflow-y: auto; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-soft); }
+.message-bubble { align-self: flex-start; width: fit-content; max-width: min(86%, 620px); padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px 12px 12px 3px; background: var(--surface); box-shadow: var(--shadow); overflow-wrap: anywhere; }
+.message-bubble.message-admin { align-self: flex-end; border-color: #252525; border-radius: 12px 12px 3px 12px; background: #252525; color: #fff; }
+.message-sender { display: block; margin-bottom: 5px; font-size: .72rem; font-weight: 700; }
+.message-bubble p { white-space: pre-wrap; font-size: .87rem; line-height: 1.6; }
+.message-bubble time { display: block; margin-top: 10px; opacity: .67; font-size: .67rem; }
+.message-compose { max-width: 680px; }
 
 /* Espacio administrativo. El contenido de cada módulo se carga bajo demanda. */
 .workspace { display: grid; grid-template-columns: 218px minmax(0, 1fr); gap: 32px; align-items: start; }

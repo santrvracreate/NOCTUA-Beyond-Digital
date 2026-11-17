@@ -2,15 +2,16 @@ import { db, result, list, save, remove, count, PAGE_SIZE } from "./data.js";
 import { $, el, button, field, modal, empty, errorText, notice } from "./ui.js";
 import { projectPayload, requiredText, period, boliviaDate, statuses } from "./validation.js";
 const schemas = {
-      proyectos: { title: "Proyectos", columns: "id,nombre,descripcion,estado,id_cliente,id_categoria,url_demo,url_produccion,visible_clientes,created_at", fields: [["nombre", "Nombre"], ["descripcion", "Descripci\xF3n", "textarea"], ["id_cliente", "ID del cliente"], ["id_categoria", "ID de categor\xEDa", "number"], ["estado", "Estado", "select", [["en_progreso", "En progreso"], ["completado", "Completado"], ["cancelado", "Cancelado"]]], ["url_demo", "URL de avance", "url"], ["url_produccion", "Enlace directo a la página web", "url"], ["visible_clientes", "Publicar en portafolio", "checkbox"]] },
+      proyectos: { title: "Proyectos", columns: "id,nombre,descripcion,estado,id_cliente,id_categoria,url_demo,url_produccion,visible_clientes,created_at", fields: [["nombre", "Nombre"], ["descripcion", "Descripci\xF3n", "textarea"], ["id_cliente", "ID del cliente"], ["id_categoria", "Categoría", "select", [["", "Sin categoría"]]], ["estado", "Estado", "select", [["en_progreso", "En progreso"], ["completado", "Completado"], ["cancelado", "Cancelado"]]], ["url_demo", "URL de avance", "url"], ["url_produccion", "Enlace directo a la página web", "url"], ["visible_clientes", "Publicar en portafolio", "checkbox"]] },
   usuarios: { title: "Usuarios y clientes", table: "clientes", columns: "id,nombre,telefono,created_at", fields: [["nombre", "Nombre"], ["telefono", "Tel\xE9fono", "tel"]], noCreate: true, noDelete: true },
   categorias: { title: "Categor\xEDas", columns: "id,nombre", fields: [["nombre", "Nombre"]] },
   solicitudes: { title: "Solicitudes", columns: "id,detalle,estado,id_cliente,id_proyecto,created_at", search: "detalle", fields: [["detalle", "Detalle", "textarea"], ["id_cliente", "ID del cliente"], ["id_proyecto", "ID del proyecto", "number"], ["estado", "Estado", "select", [["pendiente", "Pendiente"], ["aceptada", "Aceptada"], ["rechazada", "Rechazada"], ["convertida", "Convertida"]]]] },
-  mensajes: { title: "Mensajes", columns: "id,id_usuario,contenido,created_at", search: "contenido", fields: [["contenido", "Mensaje", "textarea"]], noCreate: true, noEdit: true }
+  mensajes: { title: "Mensajes" }
 };
 function mountAdmin(onProjectsChanged) {
   const root = $("#admin-content");
   let active = true, version = 0, current = "dashboard", page = 0, search = "", sort = "recent";
+  let selectedConversation = null;
   const controller = new AbortController();
   async function render() {
     const ticket = ++version;
@@ -22,6 +23,10 @@ function mountAdmin(onProjectsChanged) {
       }
       if (current === "usuarios") {
         await renderUsers(ticket);
+        return;
+      }
+      if (current === "mensajes") {
+        await renderMessages(ticket);
         return;
       }
       const config = schemas[current];
@@ -66,10 +71,14 @@ function mountAdmin(onProjectsChanged) {
         if (!config.noEdit) actions.append(button("Editar", () => edit(config, table, row), "button-secondary"));
         if (current === "usuarios") actions.append(button("Rol", () => roleEditor(row), "button-secondary"));
         if (!config.noDelete) actions.append(button("Eliminar", async () => {
+          if (table === "categorias" && await count("proyectos", { id_categoria: row.id })) {
+            notice("#app-notice", "Esta categoría tiene proyectos. Cambia primero la categoría de esos proyectos.", "error");
+            return;
+          }
           if (!confirm("\xBFEliminar este registro? Esta acci\xF3n no se puede deshacer.")) return;
           await remove(table, row.id);
           await render();
-          if (table === "proyectos") await onProjectsChanged();
+          if (["proyectos", "categorias"].includes(table)) await onProjectsChanged();
         }, "button-danger"));
         tr.append(actions);
         body.append(tr);
@@ -139,6 +148,77 @@ function mountAdmin(onProjectsChanged) {
     nav.append(prev, el("span", `Página ${page + 1} · ${users.length} cuentas`), next);
     root.replaceChildren(heading, toolbar, wrap, nav);
   }
+  async function renderMessages(ticket) {
+    const [clientsResult, rolesResult, recentResult] = await Promise.all([
+      result(db.from("clientes").select("id,nombre").order("nombre")),
+      result(db.from("perfiles").select("id,rol")),
+      result(db.from("mensajes").select("id_usuario").order("created_at", { ascending: false }).limit(1))
+    ]);
+    if (!active || ticket !== version) return;
+    const customerIds = new Set(rolesResult.data.filter((profile) => profile.rol === "usuario").map((profile) => profile.id));
+    const clients = clientsResult.data.filter((client) => customerIds.has(client.id));
+    const heading = el("div", null, "panel-heading");
+    heading.append(el("h2", "Conversaciones"), el("p", "Responde a cada cliente desde su conversación privada."));
+    if (!clients.length) {
+      root.replaceChildren(heading, el("p", "Aún no hay clientes con quienes conversar.", "empty-state"));
+      return;
+    }
+    const preferred = recentResult.data[0]?.id_usuario;
+    if (!clients.some((client) => client.id === selectedConversation)) selectedConversation = clients.some((client) => client.id === preferred) ? preferred : clients[0].id;
+    const selector = field("cliente", "Cliente", selectedConversation, "select", clients.map((client) => [client.id, client.nombre || "Cliente"]));
+    const thread = el("div", null, "message-list");
+    thread.setAttribute("aria-live", "polite");
+    const compose = el("form", null, "message-compose");
+    compose.append(field("contenido", "Tu respuesta", "", "textarea"));
+    compose.elements.contenido.required = true;
+    compose.elements.contenido.maxLength = 2000;
+    const send = el("button", "Enviar respuesta");
+    send.type = "submit";
+    const feedback = el("p", null, "feedback");
+    feedback.setAttribute("role", "status");
+    compose.append(send, feedback);
+    const refresh = button("Actualizar mensajes", () => loadThread(), "button-secondary");
+    const controls = el("div", null, "conversation-heading");
+    controls.append(selector, refresh);
+    root.replaceChildren(heading, controls, thread, compose);
+    async function loadThread() {
+      const clientId = selector.lastElementChild.value;
+      empty(thread, "Cargando mensajes…");
+      try {
+        const { data } = await result(db.from("mensajes").select("id,contenido,remitente,created_at").eq("id_usuario", clientId).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(50));
+        if (!active || ticket !== version || selector.lastElementChild.value !== clientId) return;
+        thread.replaceChildren();
+        for (const message of data.reverse()) {
+          const item = el("article", null, `message-bubble ${message.remitente === "admin" ? "message-admin" : "message-client"}`);
+          item.append(el("span", message.remitente === "admin" ? "NOCTUA" : "Cliente", "message-sender"), el("p", message.contenido), el("time", new Date(message.created_at).toLocaleString("es-BO", { timeZone: "America/La_Paz", dateStyle: "medium", timeStyle: "short" })));
+          thread.append(item);
+        }
+        if (!data.length) empty(thread, "Aún no hay mensajes con este cliente.");
+      } catch (error) {
+        empty(thread, errorText(error));
+      }
+    }
+    selector.lastElementChild.addEventListener("change", () => {
+      selectedConversation = selector.lastElementChild.value;
+      loadThread();
+    });
+    compose.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (send.disabled || !compose.reportValidity()) return;
+      send.disabled = true;
+      try {
+        await result(db.from("mensajes").insert({ id_usuario: selector.lastElementChild.value, contenido: requiredText(compose.elements.contenido.value, 2000), remitente: "admin" }));
+        compose.reset();
+        notice(feedback, "Respuesta enviada.", "success");
+        await loadThread();
+      } catch (error) {
+        notice(feedback, errorText(error), "error");
+      } finally {
+        send.disabled = false;
+      }
+    });
+    await loadThread();
+  }
   function inviteUser() {
     const form = el("form", null, "form-grid");
     form.append(field("nombre", "Nombre", "", "text"), field("email", "Correo", "", "email"), field("telefono", "Teléfono", "", "tel"));
@@ -195,6 +275,16 @@ function mountAdmin(onProjectsChanged) {
       select.value = row.id_cliente || "";
       f.elements.id_cliente.replaceWith(select);
     }
+    if (table === "proyectos") {
+      const { data: categories } = await result(db.from("categorias").select("id,nombre").order("nombre"));
+      const select = f.elements.id_categoria;
+      for (const category of categories) {
+        const option = el("option", category.nombre);
+        option.value = category.id;
+        select.append(option);
+      }
+      select.value = row.id_categoria == null ? "" : String(row.id_categoria);
+    }
     const submit = el("button", "Guardar");
     submit.type = "submit";
     const feedback = el("p", null, "feedback");
@@ -216,7 +306,7 @@ function mountAdmin(onProjectsChanged) {
         await save(table, payload, row.id);
         $("#record-dialog").close();
         await render();
-        if (table === "proyectos") await onProjectsChanged();
+        if (["proyectos", "categorias"].includes(table)) await onProjectsChanged();
       } catch (err) {
         notice(feedback, errorText(err), "error");
       } finally {
